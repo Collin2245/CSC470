@@ -1,13 +1,21 @@
 ;; The first three lines of this file were inserted by DrRacket. They record metadata
 ;; about the language level of this file in a form that our tools can easily process.
-#reader(lib "htdp-advanced-reader.ss" "lang")((modname Homework5) (read-case-sensitive #t) (teachpacks ()) (htdp-settings #(#t constructor repeating-decimal #f #t none #f () #f)))
-5
+#reader(lib "htdp-advanced-reader.ss" "lang")((modname Homework6) (read-case-sensitive #t) (teachpacks ()) (htdp-settings #(#t constructor repeating-decimal #t #t none #f () #f)))
 (define resolve
   (lambda (varName env)
     (cond
       ((null? env) #f)
       ((eq? varName (caar env)) (cadar env))
       (else (resolve varName (cdr env))))))
+
+(define extend-env
+  (lambda (lo-vars lo-vals env)
+    (cond
+      ((null? lo-vars) env)
+      (else (extend-env (cdr lo-vars)
+                        (cdr lo-vals)
+                        (cons (list (car lo-vars) (car lo-vals)) env))))))
+                              
 
 
 (define do-mathy-stuff-toaster
@@ -28,34 +36,32 @@
       ((symbol? no-code) (list 'var-exp no-code))
       ((eq? (car no-code) 'do-mathy-stuff)
        (list 'math-exp (cadr no-code) (no-parser (caddr no-code)) (no-parser (cadddr no-code))))
+      ((eq? (car no-code) 'do-booly-stuff)
+       (list 'bool-exp (no-parser (caadr no-code)) (list 'true-exp (no-parser (caddr no-code))) (list 'false-exp (no-parser (cadddr no-code)))))
       ((eq? (car no-code) 'function)
        (list 'func-exp
              (append (list 'params) (cadr no-code))
              (list 'body
                    (no-parser (caddr no-code)))))
-      ((eq? (car no-code) 'call)
-       (append (list 'call-exp)
-             (map no-parser (cdr no-code)))))))
+      (else (list 'call-exp
+                  (no-parser (cadr no-code))
+                  (map no-parser (cddr no-code)))))))
     
-(define env '((age 21) (a 8) (b 5) (c 23)))5
+(define env '((age 21) (a 7) (b 5) (c 23)))
 
-(define sample-no-code '(call (function (x y) y) a 3))
-
-
-(define createVars
-  (lambda (lst lst2)
-    (cond
-      ((null? lst) '())
-      (else (cons (list (car lst) (run-parsed-code (car lst2) env)) (createVars (cdr lst) (cdr lst2)))
-      ))))
+(define sample-no-code '(call (function (x y) (do-mathy-stuff + x y)) (do-booly-stuff (True) (do-mathy-stuff + age b) (do-mathy-stuff - 7 b)) (do-mathy-stuff + 7 c)))
 
 (define run-parsed-code
   (lambda (parsed-no-code env)
     (cond
       ((eq? (car parsed-no-code) 'num-lit-exp)
        (cadr parsed-no-code))
+      ((or (eq? (car parsed-no-code) 'true-exp) (eq? (car parsed-no-code) 'false-exp))
+       (run-parsed-code (cadr parsed-no-code) env))
       ((eq? (car parsed-no-code) 'var-exp)
        (resolve (cadr parsed-no-code) env))
+      ((eq? (car parsed-no-code) 'bool-exp)
+       (if (eq? (cadr parsed-no-code) 'True) (run-parsed-code (caddr parsed-no-code) env) (run-parsed-code (cadddr parsed-no-code) env)))
       ((eq? (car parsed-no-code) 'math-exp)
        (do-mathy-stuff-toaster
         (cadr parsed-no-code)
@@ -66,17 +72,12 @@
       (else
        (run-parsed-code
         (cadr parsed-no-code)
-        (append
-         (createVars(cdr (cadr (cadr parsed-no-code)))
-                    (cddr parsed-no-code))
-              env))))))
+        (extend-env
+         (cdr (cadr (cadr parsed-no-code)))
+         (map (lambda (packet) (run-parsed-code (car packet) (cadr packet))) (map (lambda (x) (list x env)) (caddr parsed-no-code)))
+         env))))))
 
-(no-parser sample-no-code)
-(run-parsed-code (no-parser '(call (function (do-mathy-stuff + x y) x y)5 3) ) env)
-
-(define s (list 'call-exp (list 'func-exp (list 'params 'x 'y) (list 'body (list 'var-exp 'x))) (list 'num-lit-exp 9) (list 'num-lit-exp 2)))
-(define s2 (list 'call-exp (list 'func-exp (list 'params) (list 'body (list 'var-exp 'x)))))
-
-      
-    
-      
+(define parsed-no-code (no-parser sample-no-code))
+sample-no-code
+parsed-no-code
+(run-parsed-code parsed-no-code env)
