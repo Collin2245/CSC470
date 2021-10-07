@@ -63,7 +63,7 @@
        (list 'ask-exp
              (no-code-boolean-parser (cadr no-code))
              (no-parser (caddr no-code))
-             (no-parser (car (cdddr no-code)))))
+             (no-parser (car (reverse no-code)))))
       (else (list 'call-exp
                   (no-code-function-parser (cadr no-code))
                   (map no-parser (cddr no-code)))))))
