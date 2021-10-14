@@ -137,12 +137,9 @@
   (lambda (parsed-no-code-function env)
     (run-parsed-code (cadr (caddr parsed-no-code-function)) env)))
 
-(define copyList
-         (lambda (lst)
-  (if (empty? lst)
-      '()
-      (append (list (car lst) (car lst))
-              (copyList (cdr lst))))))
+(define copy
+  (lambda (lst)
+     lst))
 
            
 (define run-parsed-code
@@ -168,11 +165,11 @@
            (run-parsed-code (cadddr parsed-no-code) env)))
       ((eq? (car parsed-no-code) 'params)
        (run-parsed-function-code
-        (cadr parsed-no-code)
+        (cdr parsed-no-code)
         (extend-env
-         (cdr (cadr (cadr parsed-no-code)))
-         (map (lambda (packet) (run-parsed-code (car packet) (cadr packet))) (map (lambda (x) (list x env)) (caddr parsed-no-code)))
-         (copyList env))))
+         (cadr (cadr parsed-no-code))
+         (map (lambda (packet) (run-parsed-code (car packet) (cadr packet))) (map (lambda (x) (list x (copy env))) (caddr parsed-no-code)))
+         (copy env))))
       (else
          (run-parsed-function-code
         (cadr parsed-no-code)
